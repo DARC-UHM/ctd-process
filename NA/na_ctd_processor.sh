@@ -11,6 +11,7 @@ cruise_number=$1
 cruise_source_path=$2
 dive_reports_source=$3
 output_destination_path=$4
+skip_oxygen_calculation=$5
 
 # load pretty colors
 txt_bold=$(tput bold)
@@ -27,7 +28,7 @@ mkdir -p "$tmp_output_destination"
 cd "NA" || exit 1
 
 ## Given a Cruise Number, identify the number of dives in the cruise
-dive_count=`(ls "$dive_reports_source" | grep -e "^H" | wc -l | tr -d " ")`
+dive_count=`(ls "$dive_reports_source" | grep -e "^L" | wc -l | tr -d " ")`
 if((dive_count == 0)); then
   printf "\n${txt_error}No dives found in $dive_reports_source$txt_reset\n\n"
   exit 1
@@ -35,7 +36,7 @@ fi
 
 printf "\n${txt_bold}Found $dive_count dives$txt_reset\n"
 
-dives=($(ls "$dive_reports_source"| grep -e "^H"))
+dives=($(ls "$dive_reports_source"| grep -e "^L"))
 
 ## iterate through each of the dives
 for((i = 0; i < dive_count; ++i)); do
@@ -74,7 +75,7 @@ for((i = 0; i < dive_count; ++i)); do
   else
     # run R script
     printf "Merging data...\r"
-    Rscript NA.R "$cruise_number" "$dive_number" "$dive_start_date" "$tmp_output_destination" "$output_destination_path" #--vanilla --profile
+    Rscript NA.R "$cruise_number" "$dive_number" "$dive_start_date" "$tmp_output_destination" "$output_destination_path" "$skip_oxygen_calculation" #--vanilla --profile
   fi
 
 done

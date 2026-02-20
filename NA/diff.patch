@@ -1,0 +1,56 @@
+9c9,10
+< #  Rscript NA.R "$cruise_number" "$dive_number" "$dive_start_date" "$tmp_output_destination" "$output_destination_path"
+---
+> ### Added: Thu Feb 19, 2026 for "Little Hercules" to skip the Oxygen sensor
+> #  Rscript NA.R "$cruise_number" "$dive_number" "$dive_start_date" "$onbottom_time" "$tmp_output_destination" "$output_destination_path" "$skip_oxygen_calculation"
+17a19
+> skip_oxygen_calculation <- tolower(args[6]) == "true" #true or false
+115d116
+< invisible(o2s_data <- read_o2s_nav_data())
+118,119c119,128
+< # Merge filtered tibbles
+< merged_data <- left_join(ctd_data, o2s_data, by = "Timestamp") %>% left_join(dat_data, by = "Timestamp")
+---
+> if(skip_oxygen_calculation){
+>   merged_data <- left_join(ctd_data, dat_data, by = "Timestamp")
+>   # Omit Oxygen Calculation columns
+>   selected_columns <- c("Latitude", "Longitude", "Depth", "Temperature","Salinity", "Timestamp", "Alt")  
+>   new_header_names <- c('Latitude','Longitude','Depth','Temperature', 'Salinity','Date','Alt')  
+> } else {
+>   # Read O2S NAV data 
+>   invisible(o2s_data <- read_o2s_nav_data())
+>   # Merge filtered tibbles
+>   merged_data <- left_join(ctd_data, o2s_data, by = "Timestamp") %>% left_join(dat_data, by = "Timestamp")
+121,122c130,131
+< # Replace alt NAs with empty strings
+< merged_data <- merged_data %>% mutate(across(.cols = c("Alt"), .fns = ~ifelse(is.na(.), "", .)))
+---
+>   # Replace alt NAs with empty strings
+>   merged_data <- merged_data %>% mutate(across(.cols = c("Alt"), .fns = ~ifelse(is.na(.), "", .)))
+124,130c133,144
+< # print("START Oxygen Correction")
+< calculate_oxygen <- function(calculate_oxygen_mgperliter, calculate_oxygen_microMolar, calculate_oxygen_mlperliter, merged_data) {
+<   merged_data <- merged_data %>%
+<     mutate(Oxygen_microMolar = calculate_oxygen_microMolar(Oxygen, Salinity, Temperature, Depth)) %>%
+<     mutate(Oxygen_mgperliter = calculate_oxygen_mgperliter(Oxygen_microMolar)) %>%
+<     mutate(Oxygen_mlperliter = calculate_oxygen_mlperliter(Oxygen_microMolar))
+<   return(merged_data)
+---
+>   # print("START Oxygen Correction")
+>   calculate_oxygen <- function(calculate_oxygen_mgperliter, calculate_oxygen_microMolar, calculate_oxygen_mlperliter, merged_data) {
+>     merged_data <- merged_data %>%
+>       mutate(Oxygen_microMolar = calculate_oxygen_microMolar(Oxygen, Salinity, Temperature, Depth)) %>%
+>       mutate(Oxygen_mgperliter = calculate_oxygen_mgperliter(Oxygen_microMolar)) %>%
+>       mutate(Oxygen_mlperliter = calculate_oxygen_mlperliter(Oxygen_microMolar))
+>     return(merged_data)
+>   }
+>     # calculate Oxygen and merge
+>     merged_data <- calculate_oxygen(calculate_oxygen_mgperliter, calculate_oxygen_microMolar, calculate_oxygen_mlperliter, merged_data)
+>     selected_columns <- c("Latitude", "Longitude", "Depth", "Temperature", "Oxygen_mgperliter", "Oxygen_mlperliter", "Salinity", "Timestamp", "Alt")  # Specify the columns you want to select
+>   new_header_names <- c('Latitude','Longitude','Depth','Temperature','oxygen_mg_per_l', 'oxygen_ml_per_l', 'Salinity','Date','Alt')  # Specify the new header names
+133d146
+< merged_data <- calculate_oxygen(calculate_oxygen_mgperliter, calculate_oxygen_microMolar, calculate_oxygen_mlperliter, merged_data)
+138,140d150
+< selected_columns <- c("Latitude", "Longitude", "Depth", "Temperature", "Oxygen_mgperliter", "Oxygen_mlperliter", "Salinity", "Timestamp", "Alt")  # Specify the columns you want to select
+< new_header_names <- c('Latitude','Longitude','Depth','Temperature','oxygen_mg_per_l', 'oxygen_ml_per_l', 'Salinity','Date','Alt')  # Specify the new header names
+< 

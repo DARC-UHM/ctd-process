@@ -5,6 +5,7 @@ dive_number=$1
 cruise_source_path=$2
 tmp_folder=$3
 output_destination_path=$4
+skip_oxygen_calculation=$5
 
 # progress bar visual
 function ProgressBar {
@@ -50,7 +51,7 @@ if [ ! -f "$ctd_nav_tsv" ]; then
   printf "${txt_error}\nERROR: $ctd_nav_tsv does not exist\n"
   exit 1
 fi
-if [ ! -f "$o2s_nav_tsv" ]; then
+if [ ! -f "$o2s_nav_tsv" ] && [ "$skip_oxygen_calculation" = "false" ]; then
   printf "${txt_error}\nERROR: $o2s_nav_tsv does not exist\n"
   exit 1
 fi
@@ -60,7 +61,7 @@ if [ ! -s "$ctd_nav_tsv" ]; then
   printf "${txt_error}\nERROR: $ctd_nav_tsv is empty${txt_reset}\n"
   exit 1
 fi
-if [ ! -s "$o2s_nav_tsv" ]; then
+if [ ! -s "$o2s_nav_tsv" ] && [ "$skip_oxygen_calculation" = "false" ]; then
   printf "${txt_error}\nERROR: $o2s_nav_tsv is empty${txt_reset}\n"
   exit 1
 fi
@@ -72,25 +73,38 @@ CTD_NAV_end_dive_time=$(tail -1 "$ctd_nav_tsv" | cut -f1 -s) # 2019-08-31T06:43:
 O2S_NAV_end_dive_time=$(tail -1 "$o2s_nav_tsv" | cut -f1 -s) # 2019-08-31T06:43:44
 
 # compare start and end times of CTD and O2S, get the earliest start time and the latest end time
-if [ "$CTD_NAV_start_dive_time" \< "$O2S_NAV_start_dive_time" ]; then
-  start_dive_time=$CTD_NAV_start_dive_time
-else
-  start_dive_time=$O2S_NAV_start_dive_time
+if [ "$skip_oxygen_calculation" = "false" ]; then 
+    
+  if [ "$CTD_NAV_start_dive_time" \< "$O2S_NAV_start_dive_time" ]; then
+    start_dive_time=$CTD_NAV_start_dive_time
+  else
+    start_dive_time=$O2S_NAV_start_dive_time
+  fi
+  if [ "$start_dive_time" == "" ]; then
+    printf "${txt_error}\nERROR: No start dive time found\n"
+    exit 1
+  fi
+  if [ "$CTD_NAV_end_dive_time" \> "$O2S_NAV_end_dive_time" ]; then
+    end_dive_time=$CTD_NAV_end_dive_time
+  else
+    end_dive_time=$O2S_NAV_end_dive_time
+  fi
+  if [ "$end_dive_time" == "" ]; then
+    printf "${txt_error}\nERROR: No end dive time found in $ctd_nav_tsv or $o2s_nav_tsv\n"
+    exit 1
+  fi
+  else 
+    start_dive_time=$CTD_NAV_start_dive_time
+    end_dive_time=$CTD_NAV_end_dive_time
+    printf "${start_dive_time} start dive time"
+    printf "${end_dive_time} end dive time"
+    if [ "$end_dive_time" == "" ]; then
+      exit 1
+    fi
+    if [ "$start_dive_time" == "" ]; then
+      exit 1
+    fi
 fi
-if [ "$start_dive_time" == "" ]; then
-  printf "${txt_error}\nERROR: No start dive time found\n"
-  exit 1
-fi
-if [ "$CTD_NAV_end_dive_time" \> "$O2S_NAV_end_dive_time" ]; then
-  end_dive_time=$CTD_NAV_end_dive_time
-else
-  end_dive_time=$O2S_NAV_end_dive_time
-fi
-if [ "$end_dive_time" == "" ]; then
-  printf "${txt_error}\nERROR: No end dive time found in $ctd_nav_tsv or $o2s_nav_tsv\n"
-  exit 1
-fi
-
 # create a folder to store extracted dat files
 mkdir -p "${tmp_folder}/dat"
 output_file="${tmp_folder}/dat/${dive_number}.DAT"
