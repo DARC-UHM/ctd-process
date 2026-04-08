@@ -1,6 +1,6 @@
 # Overview 
 
-This repository contains scripts that prepare ROV sensor data for input into VARS. There are currently two scripts, one for data from Hercules (Nautilus, NA) and one for data from Deep Discoverer, (Okeanos Explorer, EX). The scripts can be run from the command line or through a simple GUI (recommended).
+This repository contains scripts that prepare ROV sensor data for input into VARS. There are currently two scripts, one for data from Deep Discoverer (Nautilus, NA) and one for data from Hercules, (Okeanos Explorer, EX). The scripts can be run from the command line or through a simple GUI (recommended).
 
 ### Requirements
 
